@@ -185,9 +185,6 @@ function buildPrefilledFraudUrl(){
     title: "Fraud Report – Suspected Seller",
     labels: [fraudLabelForNewIssues],
     bodyLines: [
-      "### Your name",
-      "<your name>",
-      "",
       "### Your Whatnot username",
       "<your Whatnot username>",
       "",
@@ -475,4 +472,5 @@ async function init(){
 }
 
 init();
+
 
