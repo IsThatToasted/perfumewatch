@@ -22,7 +22,6 @@ function issueNewUrl(template){
 }
 
 function issuesListUrl(label){
-  // 100 per page; if you exceed that, add pagination later
   const q = new URLSearchParams({
     state: "open",
     labels: label,
@@ -46,13 +45,52 @@ async function fetchJson(url){
 
 function safeText(s){ return (s || "").toString().trim(); }
 
-function sellerKeyFromIssue(issue){
-  // For both votes and fraud: use issue title as the seller key
+/**
+ * Extract a field value from GitHub Issue Form body.
+ * Issue forms typically render like:
+ * "### Reported seller Whatnot username (exact)\n\nsellername"
+ */
+function extractFieldFromBody(body, headingText){
+  const b = safeText(body);
+  if(!b) return "";
+  const pattern = new RegExp(`###\\s+${escapeRegExp(headingText)}\\s*\\n+([\\s\\S]*?)(\\n###\\s+|$)`, "i");
+  const m = b.match(pattern);
+  if(!m) return "";
+  // Clean: remove extra newlines/markdown artifacts
+  return safeText(m[1]).split("\n").map(x => x.trim()).filter(Boolean).join(" ");
+}
+
+function escapeRegExp(str){
+  return str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+/**
+ * For votes: seller key comes from issue title (your vote template sets title to seller name)
+ */
+function sellerKeyFromVoteIssue(issue){
   return safeText(issue.title);
 }
 
+/**
+ * For fraud: use the actual seller username field from the issue form body.
+ * Fallback: attempt to parse from title (before first dash).
+ */
+function sellerKeyFromFraudIssue(issue){
+  const body = safeText(issue.body);
+
+  // This MUST match the label text you used in report_fraud.yml
+  const fromBody = extractFieldFromBody(body, "Reported seller Whatnot username (exact)");
+  if(fromBody) return fromBody;
+
+  // Fallback: parse first chunk of title
+  // Example: "Citimall - Known Fraudulent Seller - Whatnot" => "Citimall"
+  const t = safeText(issue.title);
+  if(!t) return "";
+  const first = t.split(" - ")[0].trim();
+  return first || t;
+}
+
 function sellerSearchUrlForLabel(label, seller){
-  // Link to GitHub issues filtered by label + seller text
   const base = `https://github.com/${cfg.repoOwner}/${cfg.repoName}/issues`;
   const q = encodeURIComponent(`is:issue is:open label:"${label}" ${seller}`);
   return `${base}?q=${q}`;
@@ -92,7 +130,7 @@ async function loadVotes(){
   const agg = {};
 
   for(const issue of issues){
-    const seller = sellerKeyFromIssue(issue);
+    const seller = sellerKeyFromVoteIssue(issue);
     if(!seller) continue;
 
     if(!agg[seller]){
@@ -111,7 +149,7 @@ async function loadVotes(){
 
 /* ---------------------------
    FRAUD (APPROVED REPORTS)
-   Now aggregated like votes
+   Aggregated + links to latest issue
 ----------------------------*/
 function renderFraudList(agg){
   els.fraudList.innerHTML = "";
@@ -130,13 +168,13 @@ function renderFraudList(agg){
     li.className = "listItem";
     li.innerHTML = `
       <div>
-        <!-- main click goes to the latest approved issue -->
         <div>
           <a href="${row.latestIssueUrl}" target="_blank" rel="noreferrer">${row.seller}</a>
         </div>
         <div class="muted small">
           Approved evidence-backed reports.
-          <a href="${row.allUrl}" target="_blank" rel="noreferrer" style="color:var(--muted); text-decoration:underline;">
+          <a href="${row.allUrl}" target="_blank" rel="noreferrer"
+             style="color:var(--muted); text-decoration:underline;">
             View all
           </a>
         </div>
@@ -150,16 +188,16 @@ function renderFraudList(agg){
 async function loadApprovedFraud(){
   const issues = await fetchJson(issuesListUrl(cfg.fraudApprovedLabel));
 
-  // Aggregate by seller (issue title) and keep the most recent issue URL
+  // Aggregate by seller username (from body field)
   const agg = {};
   for(const issue of issues){
-    const seller = sellerKeyFromIssue(issue);
+    const seller = sellerKeyFromFraudIssue(issue);
     if(!seller) continue;
 
     if(!agg[seller]){
       agg[seller] = {
         count: 0,
-        latestIssueUrl: issue.html_url, // first seen is newest because API sorts by created desc
+        latestIssueUrl: issue.html_url, // newest first due to API sort
         allUrl: sellerSearchUrlForLabel(cfg.fraudApprovedLabel, seller),
       };
     }
@@ -167,10 +205,7 @@ async function loadApprovedFraud(){
     agg[seller].count += 1;
   }
 
-  // Pill shows total approved reports (issues)
-  const approvedIssueCount = issues.length;
-  els.fraudCountPill.textContent = `${approvedIssueCount} approved`;
-
+  els.fraudCountPill.textContent = `${issues.length} approved`;
   renderFraudList(agg);
 }
 
@@ -178,7 +213,6 @@ async function loadApprovedFraud(){
    INIT
 ----------------------------*/
 async function init(){
-  // Wire up links to GitHub Issue Forms:
   els.voteLink.href = issueNewUrl("vote_authentic.yml");
   els.reportLink.href = issueNewUrl("report_fraud.yml");
 
@@ -196,4 +230,3 @@ async function init(){
 }
 
 init();
-
