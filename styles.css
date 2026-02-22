@@ -244,6 +244,7 @@ code{ background: rgba(255,255,255,.06); padding:2px 6px; border-radius:8px; bor
   animation: bannedPulse 3s infinite ease-in-out;
 }
 
+.span2 { grid-column: 1 / -1; }
 
 
 
