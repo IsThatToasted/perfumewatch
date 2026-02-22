@@ -158,11 +158,10 @@ function buildPrefilledIssueUrl({ title, labels, bodyLines }){
 }
 
 function buildPrefilledVoteUrl(){
-  const voteLabelForNewIssues = cfg.voteLabel || "vote-authentic";
-
+  // No labels by default — you manually add vote-authentic after review
   return buildPrefilledIssueUrl({
     title: "Vote – Authentic Seller",
-    labels: [voteLabelForNewIssues],
+    labels: [], // <-- EMPTY
     bodyLines: [
       "### Whatnot seller username (exact)",
       "<paste seller username here>",
@@ -472,5 +471,6 @@ async function init(){
 }
 
 init();
+
 
 
