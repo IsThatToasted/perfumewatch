@@ -42,10 +42,11 @@
         <span class="pill warning" id="fraudCountPill">Loading…</span>
       </div>
       <div class="muted small">
-        Only reports you approve (label: <code>approved-fraud</code>) appear here.
+        Ranked by approved reports. Only reports you approve (label: <code>approved-fraud</code>) appear here.
       </div>
 
-      <ul class="list" id="fraudList"></ul>
+      <!-- fraud list now mirrors the authentic list style -->
+      <ol class="list" id="fraudList"></ol>
 
       <details class="details">
         <summary>What counts as “evidence”?</summary>
@@ -92,8 +93,7 @@
       </div>
 
       <div class="footerNote muted small">
-        This site doesn’t store emails publicly on the page — the report lives in the issue. If you want private reports later,
-        you’d switch the report form to a service (Formspree/Supabase), but this is the lightest GitHub-only setup.
+        Note: GitHub Issues are public. If you want reports to be private (especially emails), we can swap the report form to a private form service.
       </div>
     </section>
   </main>
