@@ -130,8 +130,16 @@ function renderFraudList(agg){
     li.className = "listItem";
     li.innerHTML = `
       <div>
-        <div><a href="${row.searchUrl}" target="_blank" rel="noreferrer">${row.seller}</a></div>
-        <div class="muted small">Approved evidence-backed reports (click to view).</div>
+        <!-- main click goes to the latest approved issue -->
+        <div>
+          <a href="${row.latestIssueUrl}" target="_blank" rel="noreferrer">${row.seller}</a>
+        </div>
+        <div class="muted small">
+          Approved evidence-backed reports.
+          <a href="${row.allUrl}" target="_blank" rel="noreferrer" style="color:var(--muted); text-decoration:underline;">
+            View all
+          </a>
+        </div>
       </div>
       <div class="badge warn">${row.count} report${row.count === 1 ? "" : "s"}</div>
     `;
@@ -142,7 +150,7 @@ function renderFraudList(agg){
 async function loadApprovedFraud(){
   const issues = await fetchJson(issuesListUrl(cfg.fraudApprovedLabel));
 
-  // Aggregate by seller (issue title)
+  // Aggregate by seller (issue title) and keep the most recent issue URL
   const agg = {};
   for(const issue of issues){
     const seller = sellerKeyFromIssue(issue);
@@ -151,13 +159,15 @@ async function loadApprovedFraud(){
     if(!agg[seller]){
       agg[seller] = {
         count: 0,
-        searchUrl: sellerSearchUrlForLabel(cfg.fraudApprovedLabel, seller),
+        latestIssueUrl: issue.html_url, // first seen is newest because API sorts by created desc
+        allUrl: sellerSearchUrlForLabel(cfg.fraudApprovedLabel, seller),
       };
     }
+
     agg[seller].count += 1;
   }
 
-  // This pill shows total approved reports (issues), not unique sellers
+  // Pill shows total approved reports (issues)
   const approvedIssueCount = issues.length;
   els.fraudCountPill.textContent = `${approvedIssueCount} approved`;
 
@@ -186,3 +196,4 @@ async function init(){
 }
 
 init();
+
