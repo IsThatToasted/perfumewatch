@@ -32,18 +32,94 @@ function issuesListUrl(label){
   return `${repoBase()}/issues?${q.toString()}`;
 }
 
-async function fetchJson(url){
-  const res = await fetch(url, {
-    headers: { "Accept": "application/vnd.github+json" }
-  });
-  if(!res.ok){
-    const txt = await res.text().catch(()=> "");
-    throw new Error(`GitHub API error ${res.status}: ${txt || res.statusText}`);
-  }
-  return res.json();
+function safeText(s){ return (s || "").toString().trim(); }
+
+/* ---------------------------
+   API CACHING + RATE LIMIT HANDLING
+----------------------------*/
+const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
+const CACHE_PREFIX = "fi_cache_v1:";
+
+function cacheKeyForUrl(url){
+  return `${CACHE_PREFIX}${url}`;
 }
 
-function safeText(s){ return (s || "").toString().trim(); }
+function loadCache(url){
+  try{
+    const raw = localStorage.getItem(cacheKeyForUrl(url));
+    if(!raw) return null;
+    const obj = JSON.parse(raw);
+    if(!obj || typeof obj !== "object") return null;
+    return obj;
+  }catch{
+    return null;
+  }
+}
+
+function saveCache(url, data){
+  try{
+    localStorage.setItem(cacheKeyForUrl(url), JSON.stringify({ t: Date.now(), data }));
+  }catch{
+    // ignore storage errors (private mode, quota, etc)
+  }
+}
+
+function isFresh(cacheObj){
+  return !!cacheObj && (Date.now() - cacheObj.t) < CACHE_TTL_MS;
+}
+
+function fmtResetTime(unixSecondsStr){
+  const n = parseInt(unixSecondsStr || "", 10);
+  if(!Number.isFinite(n)) return "";
+  try{
+    return new Date(n * 1000).toLocaleTimeString();
+  }catch{
+    return "";
+  }
+}
+
+async function fetchJsonCached(url){
+  const cached = loadCache(url);
+
+  // If cache is fresh, use it without hitting GitHub at all
+  if(isFresh(cached)){
+    return { data: cached.data, fromCache: true, rateLimited: false };
+  }
+
+  const res = await fetch(url, { headers: { "Accept": "application/vnd.github+json" } });
+
+  // Handle rate limiting / forbidden
+  if(res.status === 403){
+    const remaining = res.headers.get("x-ratelimit-remaining");
+    const reset = res.headers.get("x-ratelimit-reset");
+    const isRateLimited = remaining === "0";
+
+    if(cached?.data){
+      const resetMsg = isRateLimited
+        ? `Rate-limited by GitHub. Using cached data (resets ~${fmtResetTime(reset)}).`
+        : `GitHub blocked request (403). Using cached data.`;
+      setStatus(resetMsg);
+      return { data: cached.data, fromCache: true, rateLimited: isRateLimited };
+    }
+
+    const txt = await res.text().catch(()=> "");
+    throw new Error(`GitHub API 403${isRateLimited ? " (rate limited)" : ""}: ${txt || "Forbidden"}`);
+  }
+
+  if(!res.ok){
+    const txt = await res.text().catch(()=> "");
+    // If we have stale cache, use it instead of failing hard
+    if(cached?.data){
+      setStatus(`GitHub API error (${res.status}). Using cached data.`);
+      return { data: cached.data, fromCache: true, rateLimited: false };
+    }
+    throw new Error(`GitHub API error ${res.status}: ${txt || res.statusText}`);
+  }
+
+  const data = await res.json();
+  saveCache(url, data);
+  return { data, fromCache: false, rateLimited: false };
+}
 
 /**
  * Extract a field value from GitHub Issue Form body.
@@ -56,7 +132,6 @@ function extractFieldFromBody(body, headingText){
   const pattern = new RegExp(`###\\s+${escapeRegExp(headingText)}\\s*\\n+([\\s\\S]*?)(\\n###\\s+|$)`, "i");
   const m = b.match(pattern);
   if(!m) return "";
-  // Clean: remove extra newlines/markdown artifacts
   return safeText(m[1]).split("\n").map(x => x.trim()).filter(Boolean).join(" ");
 }
 
@@ -79,9 +154,6 @@ function buildPrefilledIssueUrl({ title, labels, bodyLines }){
 }
 
 function buildPrefilledVoteUrl(){
-  // NOTE: this label should match what your site counts in cfg.voteLabel
-  // If cfg.voteLabel is "vote-authentic" keep this the same.
-  // If you switch to moderation later, set this to "vote-pending" and cfg.voteLabel to "vote-approved".
   const voteLabelForNewIssues = cfg.voteLabel || "vote-authentic";
 
   return buildPrefilledIssueUrl({
@@ -103,7 +175,6 @@ function buildPrefilledVoteUrl(){
 }
 
 function buildPrefilledFraudUrl(){
-  // New fraud reports should be labeled fraud-report; you later add approved-fraud manually.
   const fraudLabelForNewIssues = cfg.fraudReportLabel || "fraud-report";
 
   return buildPrefilledIssueUrl({
@@ -140,30 +211,24 @@ function buildPrefilledFraudUrl(){
 }
 
 /**
- * For votes: seller key SHOULD come from the issue body field if present.
- * This makes vote counting consistent even if titles vary.
+ * For votes: seller key comes from the issue body field if present.
  */
 function sellerKeyFromVoteIssue(issue){
   const body = safeText(issue.body);
   const fromBody = extractFieldFromBody(body, "Whatnot seller username (exact)");
   if(fromBody) return fromBody;
-
-  // Fallback: title
   return safeText(issue.title);
 }
 
 /**
- * For fraud: use the actual seller username field from the issue body.
- * Fallback: attempt to parse from title (before first dash).
+ * For fraud: use the seller username field from the issue body.
  */
 function sellerKeyFromFraudIssue(issue){
   const body = safeText(issue.body);
 
-  // Must match the heading in the prefilled body / or your report form label
   const fromBody = extractFieldFromBody(body, "Reported seller Whatnot username (exact)");
   if(fromBody) return fromBody;
 
-  // Fallback: parse first chunk of title
   const t = safeText(issue.title);
   if(!t) return "";
   const first = t.split(" - ")[0].trim();
@@ -215,9 +280,10 @@ function renderTopAuthentic(agg){
 }
 
 async function loadVotes(){
-  const issues = await fetchJson(issuesListUrl(cfg.voteLabel));
-  const agg = {};
+  const url = issuesListUrl(cfg.voteLabel);
+  const { data: issues, fromCache } = await fetchJsonCached(url);
 
+  const agg = {};
   for(const issue of issues){
     const seller = sellerKeyFromVoteIssue(issue);
     if(!seller) continue;
@@ -225,22 +291,21 @@ async function loadVotes(){
     if(!agg[seller]){
       agg[seller] = {
         count: 0,
-        latestIssueUrl: issue.html_url, // newest vote issue for that seller
+        latestIssueUrl: issue.html_url,
         allUrl: sellerSearchUrlForLabel(cfg.voteLabel, seller),
       };
     }
-
     agg[seller].count += 1;
   }
 
-  const totalVotes = issues.length;
-  els.voteCountPill.textContent = `${totalVotes} vote${totalVotes === 1 ? "" : "s"}`;
+  els.voteCountPill.textContent = `${issues.length} vote${issues.length === 1 ? "" : "s"}`;
   renderTopAuthentic(agg);
+
+  if(fromCache) setStatus("Loaded (cached).");
 }
 
 /* ---------------------------
    FRAUD (APPROVED REPORTS)
-   Aggregated + links to latest issue
 ----------------------------*/
 function renderFraudList(agg){
   els.fraudList.innerHTML = "";
@@ -277,7 +342,8 @@ function renderFraudList(agg){
 }
 
 async function loadApprovedFraud(){
-  const issues = await fetchJson(issuesListUrl(cfg.fraudApprovedLabel));
+  const url = issuesListUrl(cfg.fraudApprovedLabel);
+  const { data: issues, fromCache } = await fetchJsonCached(url);
 
   const agg = {};
   for(const issue of issues){
@@ -291,19 +357,20 @@ async function loadApprovedFraud(){
         allUrl: sellerSearchUrlForLabel(cfg.fraudApprovedLabel, seller),
       };
     }
-
     agg[seller].count += 1;
   }
 
   els.fraudCountPill.textContent = `${issues.length} approved`;
   renderFraudList(agg);
+
+  if(fromCache) setStatus("Loaded (cached).");
 }
 
 /* ---------------------------
    INIT
 ----------------------------*/
 async function init(){
-  // Buttons now open PREFILLED classic issue editor (not the .yml forms)
+  // Buttons open PREFILLED classic issue editor
   els.voteLink.href = buildPrefilledVoteUrl();
   els.reportLink.href = buildPrefilledFraudUrl();
 
@@ -311,12 +378,14 @@ async function init(){
 
   try{
     await Promise.all([loadVotes(), loadApprovedFraud()]);
-    setStatus("Loaded.");
+    // If nothing overwrote status (like cache/rate-limit message), set to Loaded.
+    if(els.status.textContent === "Loading lists from GitHub…") setStatus("Loaded.");
   }catch(err){
     console.error(err);
-    setStatus("Error loading from GitHub API. Check your repo config + labels.");
-    els.voteCountPill.textContent = "Error";
-    els.fraudCountPill.textContent = "Error";
+    // Don’t nuke UI if cache already filled things; just show helpful message.
+    setStatus("Temporarily rate-limited by GitHub. Try again in a bit.");
+    if (els.voteCountPill.textContent === "Loading…") els.voteCountPill.textContent = "—";
+    if (els.fraudCountPill.textContent === "Loading…") els.fraudCountPill.textContent = "—";
   }
 }
 
