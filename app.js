@@ -9,6 +9,10 @@ const els = {
   voteCountPill: document.getElementById("voteCountPill"),
   fraudCountPill: document.getElementById("fraudCountPill"),
   status: document.getElementById("status"),
+
+  // BANNED (from bannedsellers.txt)
+  bannedList: document.getElementById("bannedList"),
+  bannedCountPill: document.getElementById("bannedCountPill"),
 };
 
 function setStatus(msg){ els.status.textContent = msg; }
@@ -242,6 +246,91 @@ function sellerSearchUrlForLabel(label, seller){
 }
 
 /* ---------------------------
+   BANNED SELLERS (from bannedsellers.txt)
+   Format per line:
+   seller
+   seller | reason
+   seller | reason | link
+   Lines starting with # are comments.
+----------------------------*/
+function parseBannedSellers(text){
+  const lines = (text || "").split(/\r?\n/);
+  const items = [];
+
+  for(const raw of lines){
+    const line = raw.trim();
+    if(!line || line.startsWith("#")) continue;
+
+    const parts = line.split("|").map(p => p.trim());
+    const seller = (parts[0] || "").trim();
+    const reason = (parts[1] || "").trim();
+    const link = (parts[2] || "").trim();
+
+    if(!seller) continue;
+    items.push({ seller, reason, link });
+  }
+
+  // sort alphabetically (optional)
+  items.sort((a,b) => a.seller.localeCompare(b.seller));
+  return items;
+}
+
+function renderBanned(items){
+  if(!els.bannedList || !els.bannedCountPill) return;
+
+  els.bannedList.innerHTML = "";
+
+  if(!items.length){
+    els.bannedCountPill.textContent = "0";
+    els.bannedList.innerHTML = `<li class="muted small">No banned sellers listed.</li>`;
+    return;
+  }
+
+  els.bannedCountPill.textContent = `${items.length}`;
+
+  for(const it of items){
+    const li = document.createElement("li");
+    li.className = "listItem";
+
+    const nameHtml = it.link
+      ? `<a href="${it.link}" target="_blank" rel="noreferrer">${it.seller}</a>`
+      : `<div>${it.seller}</div>`;
+
+    const reasonHtml = it.reason
+      ? `<div class="muted small">${it.reason}</div>`
+      : `<div class="muted small">Confirmed fraudulent. Do not purchase.</div>`;
+
+    li.innerHTML = `
+      <div>
+        ${nameHtml}
+        ${reasonHtml}
+      </div>
+      <div class="badge warn">BANNED</div>
+    `;
+    els.bannedList.appendChild(li);
+  }
+}
+
+async function loadBannedFromFile(){
+  // If you haven't added the HTML section yet, just skip gracefully.
+  if(!els.bannedList || !els.bannedCountPill) return;
+
+  try{
+    // Fetch from repo root. We add a small cache-bust so updates propagate.
+    // You can remove ?v=... if you'd rather rely on normal caching.
+    const res = await fetch(`bannedsellers.txt?v=${Date.now()}`, { cache: "no-store" });
+    if(!res.ok) throw new Error(`bannedsellers.txt not found (${res.status})`);
+    const text = await res.text();
+    const items = parseBannedSellers(text);
+    renderBanned(items);
+  }catch(err){
+    console.error(err);
+    els.bannedCountPill.textContent = "—";
+    els.bannedList.innerHTML = `<li class="muted small">Could not load <code>bannedsellers.txt</code>.</li>`;
+  }
+}
+
+/* ---------------------------
    AUTHENTIC (VOTES)
 ----------------------------*/
 function renderTopAuthentic(agg){
@@ -377,7 +466,9 @@ async function init(){
   setStatus("Loading lists from GitHub…");
 
   try{
-    await Promise.all([loadVotes(), loadApprovedFraud()]);
+    // Load banned list from file + the two GitHub API lists
+    await Promise.all([loadVotes(), loadApprovedFraud(), loadBannedFromFile()]);
+
     // If nothing overwrote status (like cache/rate-limit message), set to Loaded.
     if(els.status.textContent === "Loading lists from GitHub…") setStatus("Loaded.");
   }catch(err){
@@ -386,6 +477,7 @@ async function init(){
     setStatus("Temporarily rate-limited by GitHub. Try again in a bit.");
     if (els.voteCountPill.textContent === "Loading…") els.voteCountPill.textContent = "—";
     if (els.fraudCountPill.textContent === "Loading…") els.fraudCountPill.textContent = "—";
+    // banned list is independent (static file), so no need to change it here
   }
 }
 
