@@ -171,14 +171,15 @@ code{ background: rgba(255,255,255,.06); padding:2px 6px; border-radius:8px; bor
 
 .siteBanner{
   width:100%;
-  border-bottom:1px solid rgba(255,255,255,.06);
+  aspect-ratio: 21 / 5;   /* nice banner ratio */
+  max-height: 240px;      /* prevents huge banners */
   background:#000;
   overflow:hidden;
 }
 
 .siteBannerImg{
   width:100%;
-  height:clamp(140px, 12vw, 220px); /* <-- key change: slower growth */
+  height:100%;
   object-fit:cover;
   object-position:center 50%;
   display:block;
