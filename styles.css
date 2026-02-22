@@ -169,19 +169,19 @@ code{ background: rgba(255,255,255,.06); padding:2px 6px; border-radius:8px; bor
 
 .footer{ padding: 6px 0 18px; opacity:.9; }
 
-/* Banner Styling */
+/* Banner Styling (responsive + crops nicely) */
 .siteBanner{
   width:100%;
-  display:flex;
-  justify-content:center;
-  align-items:center;
-  background:#000; /* fallback */
   border-bottom:1px solid rgba(255,255,255,.06);
+  background:#000;
+  overflow:hidden;
 }
 
-.siteBanner img{
+/* Use a controlled “hero” height that adapts to screen size */
+.siteBannerImg{
   width:100%;
-  max-width:1400px;
-  height:auto;
+  height:clamp(120px, 22vw, 260px); /* mobile -> desktop */
+  object-fit:cover;                 /* crop instead of squish */
+  object-position:center;           /* keep text centered */
   display:block;
 }
