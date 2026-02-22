@@ -17,8 +17,8 @@ function repoBase(){
   return `https://api.github.com/repos/${cfg.repoOwner}/${cfg.repoName}`;
 }
 
-function issueNewUrl(template){
-  return `https://github.com/${cfg.repoOwner}/${cfg.repoName}/issues/new?template=${encodeURIComponent(template)}`;
+function issuesNewBase(){
+  return `https://github.com/${cfg.repoOwner}/${cfg.repoName}/issues/new`;
 }
 
 function issuesListUrl(label){
@@ -65,25 +65,105 @@ function escapeRegExp(str){
 }
 
 /**
- * For votes: seller key comes from issue title (your vote template sets title to seller name)
+ * Build a classic prefilled GitHub issue URL.
+ * This is the ONLY GitHub-native way to autofill from buttons.
+ */
+function buildPrefilledIssueUrl({ title, labels, bodyLines }){
+  const base = issuesNewBase();
+  const params = new URLSearchParams({
+    title: title || "",
+    labels: Array.isArray(labels) ? labels.join(",") : (labels || ""),
+    body: (bodyLines || []).join("\n"),
+  });
+  return `${base}?${params.toString()}`;
+}
+
+function buildPrefilledVoteUrl(){
+  // NOTE: this label should match what your site counts in cfg.voteLabel
+  // If cfg.voteLabel is "vote-authentic" keep this the same.
+  // If you switch to moderation later, set this to "vote-pending" and cfg.voteLabel to "vote-approved".
+  const voteLabelForNewIssues = cfg.voteLabel || "vote-authentic";
+
+  return buildPrefilledIssueUrl({
+    title: "Vote – Authentic Seller",
+    labels: [voteLabelForNewIssues],
+    bodyLines: [
+      "### Whatnot seller username (exact)",
+      "<paste seller username here>",
+      "",
+      "### Seller profile link (optional)",
+      "<paste Whatnot profile link here>",
+      "",
+      "### Why do you believe they’re authentic?",
+      "<sealed product / receipts shown / consistent batches / reputation / etc.>",
+      "",
+      "_Submitted via Fragrance Integrity_",
+    ],
+  });
+}
+
+function buildPrefilledFraudUrl(){
+  // New fraud reports should be labeled fraud-report; you later add approved-fraud manually.
+  const fraudLabelForNewIssues = cfg.fraudReportLabel || "fraud-report";
+
+  return buildPrefilledIssueUrl({
+    title: "Fraud Report – Suspected Seller",
+    labels: [fraudLabelForNewIssues],
+    bodyLines: [
+      "### Your name",
+      "<your name>",
+      "",
+      "### Your Whatnot username",
+      "<your Whatnot username>",
+      "",
+      "### Your email (for follow-up)",
+      "<your email>",
+      "",
+      "### Reported seller Whatnot username (exact)",
+      "<paste seller username here>",
+      "",
+      "### Seller profile link (recommended)",
+      "<paste Whatnot profile link here>",
+      "",
+      "### Complaint / what happened",
+      "<order date, item, price, what was wrong (counterfeit/missing/misrepresented), etc.>",
+      "",
+      "### Proof photos / evidence links",
+      "- <link 1>",
+      "- <link 2>",
+      "",
+      "_After submitting, you can drag & drop photos into the issue comments to upload them._",
+      "",
+      "_Submitted via Fragrance Integrity_",
+    ],
+  });
+}
+
+/**
+ * For votes: seller key SHOULD come from the issue body field if present.
+ * This makes vote counting consistent even if titles vary.
  */
 function sellerKeyFromVoteIssue(issue){
+  const body = safeText(issue.body);
+  const fromBody = extractFieldFromBody(body, "Whatnot seller username (exact)");
+  if(fromBody) return fromBody;
+
+  // Fallback: title
   return safeText(issue.title);
 }
 
 /**
- * For fraud: use the actual seller username field from the issue form body.
+ * For fraud: use the actual seller username field from the issue body.
  * Fallback: attempt to parse from title (before first dash).
  */
 function sellerKeyFromFraudIssue(issue){
   const body = safeText(issue.body);
 
-  // This MUST match the label text you used in report_fraud.yml
+  // Must match the heading in the prefilled body / or your report form label
   const fromBody = extractFieldFromBody(body, "Reported seller Whatnot username (exact)");
   if(fromBody) return fromBody;
 
   // Fallback: parse first chunk of title
-  // Example: "Citimall - Known Fraudulent Seller - Whatnot" => "Citimall"
   const t = safeText(issue.title);
   if(!t) return "";
   const first = t.split(" - ")[0].trim();
@@ -139,7 +219,7 @@ async function loadVotes(){
   const agg = {};
 
   for(const issue of issues){
-    const seller = sellerKeyFromVoteIssue(issue); // or sellerKeyFromIssue(issue) if you kept that name
+    const seller = sellerKeyFromVoteIssue(issue);
     if(!seller) continue;
 
     if(!agg[seller]){
@@ -199,7 +279,6 @@ function renderFraudList(agg){
 async function loadApprovedFraud(){
   const issues = await fetchJson(issuesListUrl(cfg.fraudApprovedLabel));
 
-  // Aggregate by seller username (from body field)
   const agg = {};
   for(const issue of issues){
     const seller = sellerKeyFromFraudIssue(issue);
@@ -208,7 +287,7 @@ async function loadApprovedFraud(){
     if(!agg[seller]){
       agg[seller] = {
         count: 0,
-        latestIssueUrl: issue.html_url, // newest first due to API sort
+        latestIssueUrl: issue.html_url,
         allUrl: sellerSearchUrlForLabel(cfg.fraudApprovedLabel, seller),
       };
     }
@@ -224,8 +303,9 @@ async function loadApprovedFraud(){
    INIT
 ----------------------------*/
 async function init(){
-  els.voteLink.href = issueNewUrl("vote_authentic.yml");
-  els.reportLink.href = issueNewUrl("report_fraud.yml");
+  // Buttons now open PREFILLED classic issue editor (not the .yml forms)
+  els.voteLink.href = buildPrefilledVoteUrl();
+  els.reportLink.href = buildPrefilledFraudUrl();
 
   setStatus("Loading lists from GitHub…");
 
@@ -241,4 +321,3 @@ async function init(){
 }
 
 init();
-
