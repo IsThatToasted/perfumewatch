@@ -178,9 +178,9 @@ code{ background: rgba(255,255,255,.06); padding:2px 6px; border-radius:8px; bor
 
 .siteBannerImg{
   width:100%;
-  height:clamp(120px, 18vw, 220px); /* a bit less tall on desktop */
+  height:clamp(140px, 12vw, 220px); /* <-- key change: slower growth */
   object-fit:cover;
-  object-position:center 55%;       /* show more of the LOWER part */
+  object-position:center 50%;
   display:block;
 }
 
