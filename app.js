@@ -116,9 +116,6 @@ function buildPrefilledFraudUrl(){
       "### Your Whatnot username",
       "<your Whatnot username>",
       "",
-      "### Your email (for follow-up)",
-      "<your email>",
-      "",
       "### Reported seller Whatnot username (exact)",
       "<paste seller username here>",
       "",
@@ -129,10 +126,6 @@ function buildPrefilledFraudUrl(){
       "<order date, item, price, what was wrong (counterfeit/missing/misrepresented), etc.>",
       "",
       "### Proof photos / evidence links",
-      "- <link 1>",
-      "- <link 2>",
-      "",
-      "_After submitting, you can drag & drop photos into the issue comments to upload them._",
       "",
       "_Submitted via Fragrance Integrity_",
     ],
@@ -321,3 +314,4 @@ async function init(){
 }
 
 init();
+
