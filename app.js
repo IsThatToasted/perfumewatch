@@ -22,7 +22,7 @@ function issueNewUrl(template){
 }
 
 function issuesListUrl(label){
-  // 100 per page; if you exceed that, you can add pagination later
+  // 100 per page; if you exceed that, add pagination later
   const q = new URLSearchParams({
     state: "open",
     labels: label,
@@ -47,10 +47,20 @@ async function fetchJson(url){
 function safeText(s){ return (s || "").toString().trim(); }
 
 function sellerKeyFromIssue(issue){
-  // Vote issues: use the issue title as the seller name (simple + consistent)
+  // For both votes and fraud: use issue title as the seller key
   return safeText(issue.title);
 }
 
+function sellerSearchUrlForLabel(label, seller){
+  // Link to GitHub issues filtered by label + seller text
+  const base = `https://github.com/${cfg.repoOwner}/${cfg.repoName}/issues`;
+  const q = encodeURIComponent(`is:issue is:open label:"${label}" ${seller}`);
+  return `${base}?q=${q}`;
+}
+
+/* ---------------------------
+   AUTHENTIC (VOTES)
+----------------------------*/
 function renderTopAuthentic(agg){
   els.topAuthenticList.innerHTML = "";
   const entries = Object.entries(agg)
@@ -69,7 +79,7 @@ function renderTopAuthentic(agg){
     li.innerHTML = `
       <div>
         <div><a href="${row.searchUrl}" target="_blank" rel="noreferrer">${row.seller}</a></div>
-        <div class="muted small">Votes are public issues (anti-spam moderation is easy).</div>
+        <div class="muted small">Votes are public issues (easy to moderate).</div>
       </div>
       <div class="badge">${row.count} vote${row.count === 1 ? "" : "s"}</div>
     `;
@@ -77,42 +87,14 @@ function renderTopAuthentic(agg){
   }
 }
 
-function renderFraudList(items){
-  els.fraudList.innerHTML = "";
-
-  if(items.length === 0){
-    els.fraudList.innerHTML = `<li class="muted small">No approved reports yet.</li>`;
-    return;
-  }
-
-  for(const it of items){
-    const seller = safeText(it.title);
-    const li = document.createElement("li");
-    li.className = "listItem";
-    li.innerHTML = `
-      <div>
-        <div><a href="${it.html_url}" target="_blank" rel="noreferrer">${seller}</a></div>
-        <div class="muted small">Click to view the evidence + discussion (public).</div>
-      </div>
-      <div class="badge warn">Approved</div>
-    `;
-    els.fraudList.appendChild(li);
-  }
-}
-
-function sellerSearchUrlForLabel(label, seller){
-  // Link to GitHub issues filtered by label + seller text
-  const base = `https://github.com/${cfg.repoOwner}/${cfg.repoName}/issues`;
-  const q = encodeURIComponent(`is:issue is:open label:"${label}" ${seller}`);
-  return `${base}?q=${q}`;
-}
-
 async function loadVotes(){
   const issues = await fetchJson(issuesListUrl(cfg.voteLabel));
   const agg = {};
+
   for(const issue of issues){
     const seller = sellerKeyFromIssue(issue);
     if(!seller) continue;
+
     if(!agg[seller]){
       agg[seller] = {
         count: 0,
@@ -127,12 +109,64 @@ async function loadVotes(){
   renderTopAuthentic(agg);
 }
 
-async function loadApprovedFraud(){
-  const issues = await fetchJson(issuesListUrl(cfg.fraudApprovedLabel));
-  els.fraudCountPill.textContent = `${issues.length} approved`;
-  renderFraudList(issues);
+/* ---------------------------
+   FRAUD (APPROVED REPORTS)
+   Now aggregated like votes
+----------------------------*/
+function renderFraudList(agg){
+  els.fraudList.innerHTML = "";
+
+  const entries = Object.entries(agg)
+    .map(([seller, meta]) => ({ seller, ...meta }))
+    .sort((a,b) => b.count - a.count || a.seller.localeCompare(b.seller));
+
+  if(entries.length === 0){
+    els.fraudList.innerHTML = `<li class="muted small">No approved reports yet.</li>`;
+    return;
+  }
+
+  for(const row of entries){
+    const li = document.createElement("li");
+    li.className = "listItem";
+    li.innerHTML = `
+      <div>
+        <div><a href="${row.searchUrl}" target="_blank" rel="noreferrer">${row.seller}</a></div>
+        <div class="muted small">Approved evidence-backed reports (click to view).</div>
+      </div>
+      <div class="badge warn">${row.count} report${row.count === 1 ? "" : "s"}</div>
+    `;
+    els.fraudList.appendChild(li);
+  }
 }
 
+async function loadApprovedFraud(){
+  const issues = await fetchJson(issuesListUrl(cfg.fraudApprovedLabel));
+
+  // Aggregate by seller (issue title)
+  const agg = {};
+  for(const issue of issues){
+    const seller = sellerKeyFromIssue(issue);
+    if(!seller) continue;
+
+    if(!agg[seller]){
+      agg[seller] = {
+        count: 0,
+        searchUrl: sellerSearchUrlForLabel(cfg.fraudApprovedLabel, seller),
+      };
+    }
+    agg[seller].count += 1;
+  }
+
+  // This pill shows total approved reports (issues), not unique sellers
+  const approvedIssueCount = issues.length;
+  els.fraudCountPill.textContent = `${approvedIssueCount} approved`;
+
+  renderFraudList(agg);
+}
+
+/* ---------------------------
+   INIT
+----------------------------*/
 async function init(){
   // Wire up links to GitHub Issue Forms:
   els.voteLink.href = issueNewUrl("vote_authentic.yml");
