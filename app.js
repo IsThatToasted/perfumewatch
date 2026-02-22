@@ -344,7 +344,7 @@ function renderTopAuthentic(agg){
           <a href="${row.latestIssueUrl}" target="_blank" rel="noreferrer">${row.seller}</a>
         </div>
         <div class="muted small">
-          Votes are public issues (easy to moderate).
+          Vouches/Votes are public. 
           <a href="${row.allUrl}" target="_blank" rel="noreferrer"
              style="color:var(--muted); text-decoration:underline;">
             View all
@@ -471,6 +471,7 @@ async function init(){
 }
 
 init();
+
 
 
 
