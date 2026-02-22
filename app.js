@@ -101,6 +101,7 @@ function sellerSearchUrlForLabel(label, seller){
 ----------------------------*/
 function renderTopAuthentic(agg){
   els.topAuthenticList.innerHTML = "";
+
   const entries = Object.entries(agg)
     .map(([seller, meta]) => ({ seller, ...meta }))
     .sort((a,b) => b.count - a.count || a.seller.localeCompare(b.seller))
@@ -116,8 +117,16 @@ function renderTopAuthentic(agg){
     li.className = "listItem";
     li.innerHTML = `
       <div>
-        <div><a href="${row.searchUrl}" target="_blank" rel="noreferrer">${row.seller}</a></div>
-        <div class="muted small">Votes are public issues (easy to moderate).</div>
+        <div>
+          <a href="${row.latestIssueUrl}" target="_blank" rel="noreferrer">${row.seller}</a>
+        </div>
+        <div class="muted small">
+          Votes are public issues (easy to moderate).
+          <a href="${row.allUrl}" target="_blank" rel="noreferrer"
+             style="color:var(--muted); text-decoration:underline;">
+            View all
+          </a>
+        </div>
       </div>
       <div class="badge">${row.count} vote${row.count === 1 ? "" : "s"}</div>
     `;
@@ -130,15 +139,17 @@ async function loadVotes(){
   const agg = {};
 
   for(const issue of issues){
-    const seller = sellerKeyFromVoteIssue(issue);
+    const seller = sellerKeyFromVoteIssue(issue); // or sellerKeyFromIssue(issue) if you kept that name
     if(!seller) continue;
 
     if(!agg[seller]){
       agg[seller] = {
         count: 0,
-        searchUrl: sellerSearchUrlForLabel(cfg.voteLabel, seller),
+        latestIssueUrl: issue.html_url, // newest vote issue for that seller
+        allUrl: sellerSearchUrlForLabel(cfg.voteLabel, seller),
       };
     }
+
     agg[seller].count += 1;
   }
 
@@ -230,3 +241,4 @@ async function init(){
 }
 
 init();
+
