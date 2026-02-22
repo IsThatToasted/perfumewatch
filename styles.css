@@ -205,6 +205,45 @@ code{ background: rgba(255,255,255,.06); padding:2px 6px; border-radius:8px; bor
   }
 }
 
+/* BANNED SECTION */
+.bannedCard {
+  border: 1px solid rgba(255, 77, 109, 0.5);
+  background: linear-gradient(145deg, rgba(45,5,10,0.95), rgba(20,0,5,0.98));
+  box-shadow: 0 0 25px rgba(255, 77, 109, 0.25);
+}
+
+.bannedCard .cardTitle {
+  color: #ff4d6d;
+  letter-spacing: 1px;
+}
+
+.pill.danger {
+  background: rgba(255, 77, 109, 0.2);
+  border: 1px solid rgba(255, 77, 109, 0.6);
+  color: #ff4d6d;
+  font-weight: 600;
+}
+
+.bannedCard .listItem {
+  border-left: 4px solid #ff4d6d;
+}
+
+.bannedCard .badge.warn {
+  background: rgba(255, 77, 109, 0.15);
+  border: 1px solid rgba(255, 77, 109, 0.5);
+  color: #ff4d6d;
+}
+
+@keyframes bannedPulse {
+  0% { box-shadow: 0 0 10px rgba(255,77,109,0.2); }
+  50% { box-shadow: 0 0 30px rgba(255,77,109,0.5); }
+  100% { box-shadow: 0 0 10px rgba(255,77,109,0.2); }
+}
+
+.bannedCard {
+  animation: bannedPulse 3s infinite ease-in-out;
+}
+
 
 
 
