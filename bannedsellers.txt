@@ -1,2 +1,2 @@
-perfumesoftheeast
-exampleseller
+# seller | reason | optional link
+perfumesoftheeast| Confirmed counterfeit activity | https://github.com/IsThatToasted/perfumewatch/issues/123
