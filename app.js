@@ -89,13 +89,13 @@ function buildPrefilledVoteUrl(){
     labels: [voteLabelForNewIssues],
     bodyLines: [
       "### Whatnot seller username (exact)",
-      "<paste seller username here>",
+      "(paste seller username here)",
       "",
       "### Seller profile link (optional)",
-      "<paste Whatnot profile link here>",
+      "(paste Whatnot profile link here)",
       "",
       "### Why do you believe they’re authentic?",
-      "<sealed product / receipts shown / consistent batches / reputation / etc.>",
+      "(sealed product / receipts shown / consistent batches / reputation / etc.)",
       "",
       "_Submitted via Fragrance Integrity_",
     ],
@@ -110,22 +110,20 @@ function buildPrefilledFraudUrl(){
     title: "Fraud Report – Suspected Seller",
     labels: [fraudLabelForNewIssues],
     bodyLines: [
-      "### Your name",
-      "<your name>",
-      "",
-      "### Your Whatnot username",
-      "<your Whatnot username>",
+      "### Your Whatnot username (required)",
+      "(paste your Whatnot username here.)",
       "",
       "### Reported seller Whatnot username (exact)",
-      "<paste seller username here>",
+      "(paste seller username here.)",
       "",
       "### Seller profile link (recommended)",
-      "<paste Whatnot profile link here>",
+      "(paste Whatnot profile link here.)",
       "",
       "### Complaint / what happened",
-      "<order date, item, price, what was wrong (counterfeit/missing/misrepresented), etc.>",
+      "(order date, item, what was wrong (counterfeit/missing/misrepresented), etc.)",
       "",
       "### Proof photos / evidence links",
+      "(use the attach photos button or provide safe links here.)",
       "",
       "_Submitted via Fragrance Integrity_",
     ],
@@ -314,4 +312,5 @@ async function init(){
 }
 
 init();
+
 
