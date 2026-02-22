@@ -166,4 +166,22 @@ code{ background: rgba(255,255,255,.06); padding:2px 6px; border-radius:8px; bor
   flex:0 0 auto;
 }
 .stepTitle{ font-weight:600; margin-bottom:2px; }
+
 .footer{ padding: 6px 0 18px; opacity:.9; }
+
+/* Banner Styling */
+.siteBanner{
+  width:100%;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  background:#000; /* fallback */
+  border-bottom:1px solid rgba(255,255,255,.06);
+}
+
+.siteBanner img{
+  width:100%;
+  max-width:1400px;
+  height:auto;
+  display:block;
+}
