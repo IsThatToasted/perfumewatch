@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Whatnot Fragrance Seller Tracker</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header class="wrap header">
+    <div>
+      <h1>Fragrance Seller Tracker</h1>
+      <p class="muted">Community voting + evidence-based reporting. Powered by GitHub Pages + GitHub Issues.</p>
+    </div>
+
+    <div class="headerActions">
+      <a class="btn" id="voteLink" href="#" target="_blank" rel="noreferrer">Vote for an Authentic Seller</a>
+      <a class="btn danger" id="reportLink" href="#" target="_blank" rel="noreferrer">Report a Fraudulent Seller</a>
+    </div>
+  </header>
+
+  <main class="wrap grid">
+    <section class="card">
+      <div class="cardHeader">
+        <h2>Top 10 Authentic Sellers</h2>
+        <span class="pill" id="voteCountPill">Loading…</span>
+      </div>
+      <div class="muted small">
+        Ranked by total votes submitted on this repo.
+      </div>
+
+      <ol class="list" id="topAuthenticList"></ol>
+
+      <div class="small muted hint">
+        Tip: click a seller to view the public vote history (issues).
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="cardHeader">
+        <h2>Suspected Fraudulent (based on evidence)</h2>
+        <span class="pill warning" id="fraudCountPill">Loading…</span>
+      </div>
+      <div class="muted small">
+        Only reports you approve (label: <code>approved-fraud</code>) appear here.
+      </div>
+
+      <ul class="list" id="fraudList"></ul>
+
+      <details class="details">
+        <summary>What counts as “evidence”?</summary>
+        <div class="muted small">
+          Batch/lot mismatch, packaging inconsistencies, poor atomizer/cap quality, proof of marketplace counterfeit, missing items,
+          receipt + photos, side-by-side comparisons, etc. Keep it factual.
+        </div>
+      </details>
+    </section>
+
+    <section class="card full">
+      <div class="cardHeader">
+        <h2>Submit a Report (super simple)</h2>
+      </div>
+
+      <div class="steps">
+        <div class="step">
+          <div class="stepNum">1</div>
+          <div>
+            <div class="stepTitle">Click “Report a Fraudulent Seller”</div>
+            <div class="muted small">It opens a guided form (GitHub Issue Form).</div>
+          </div>
+        </div>
+
+        <div class="step">
+          <div class="stepNum">2</div>
+          <div>
+            <div class="stepTitle">Attach proof photos</div>
+            <div class="muted small">
+              Paste image links (Imgur, Google Photos, etc.) in the form, or submit first and then drag-drop photos into the issue comments.
+            </div>
+          </div>
+        </div>
+
+        <div class="step">
+          <div class="stepNum">3</div>
+          <div>
+            <div class="stepTitle">Admin approval</div>
+            <div class="muted small">
+              Once you review, you add the label <code>approved-fraud</code>. Then it appears in the Suspected list automatically.
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="footerNote muted small">
+        This site doesn’t store emails publicly on the page — the report lives in the issue. If you want private reports later,
+        you’d switch the report form to a service (Formspree/Supabase), but this is the lightest GitHub-only setup.
+      </div>
+    </section>
+  </main>
+
+  <footer class="wrap footer muted small">
+    <span id="status">Ready.</span>
+  </footer>
+
+  <script src="config.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
