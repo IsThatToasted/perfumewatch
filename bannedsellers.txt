@@ -1,2 +1,4 @@
 # seller | reason | optional link
-perfumesoftheeast| Confirmed counterfeit activity | https://github.com/IsThatToasted/perfumewatch/issues/123
+perfumesoftheeast| Confirmed counterfeit activity | https://www.whatnot.com/user/perfumeoftheeast
+sjopokepro| Confirmed counterfeit activity | https://www.whatnot.com/user/sjopokepro
+aromafragrance| Confirmed counterfeit activity | https://www.whatnot.com/user/aromafragrance
