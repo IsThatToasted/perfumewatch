@@ -62,7 +62,7 @@ function issueFormUrl(templateFile){
 
 // Update these filenames if your templates use different names.
 const VOTE_TEMPLATE_FILE = "vote_authentic.yml";
-const FRAUD_TEMPLATE_FILE = "fraud_report.yml";
+const FRAUD_TEMPLATE_FILE = "report_fraud.yml";
 
 function buildVoteFormUrl(){
   return issueFormUrl(VOTE_TEMPLATE_FILE);
@@ -433,3 +433,4 @@ async function init(){
 }
 
 init();
+
