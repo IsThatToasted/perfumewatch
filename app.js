@@ -39,6 +39,35 @@ function issuesListUrl(label){
 function safeText(s){ return (s || "").toString().trim(); }
 
 /* ---------------------------
+   ISSUE FORMS (YML templates)
+----------------------------*/
+
+/**
+ * Build a GitHub Issue Form URL that opens a specific .yml template.
+ * Template files must live in .github/ISSUE_TEMPLATE/
+ *
+ * Example:
+ * https://github.com/OWNER/REPO/issues/new?template=vote-authentic.yml
+ */
+function issueFormUrl(templateFile){
+  const base = issuesNewBase();
+  const params = new URLSearchParams({ template: templateFile });
+  return `${base}?${params.toString()}`;
+}
+
+// Update these filenames if your templates use different names.
+const VOTE_TEMPLATE_FILE = "vote-authentic.yml";
+const FRAUD_TEMPLATE_FILE = "fraud-report.yml";
+
+function buildVoteFormUrl(){
+  return issueFormUrl(VOTE_TEMPLATE_FILE);
+}
+
+function buildFraudFormUrl(){
+  return issueFormUrl(FRAUD_TEMPLATE_FILE);
+}
+
+/* ---------------------------
    API CACHING + RATE LIMIT HANDLING
 ----------------------------*/
 const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
@@ -144,66 +173,6 @@ function escapeRegExp(str){
 }
 
 /**
- * Build a classic prefilled GitHub issue URL.
- * This is the ONLY GitHub-native way to autofill from buttons.
- */
-function buildPrefilledIssueUrl({ title, labels, bodyLines }){
-  const base = issuesNewBase();
-  const params = new URLSearchParams({
-    title: title || "",
-    labels: Array.isArray(labels) ? labels.join(",") : (labels || ""),
-    body: (bodyLines || []).join("\n"),
-  });
-  return `${base}?${params.toString()}`;
-}
-
-function buildPrefilledVoteUrl(){
-  // No labels by default — you manually add vote-authentic after review
-  return buildPrefilledIssueUrl({
-    title: "Vote – Authentic Seller",
-    labels: [], // <-- EMPTY
-    bodyLines: [
-      "### Whatnot seller username (exact)",
-      "<paste seller username here>",
-      "",
-      "### Seller profile link (optional)",
-      "<paste Whatnot profile link here>",
-      "",
-      "### Why do you believe they’re authentic?",
-      "<sealed product / receipts shown / consistent batches / reputation / etc.>",
-      "",
-      "_Submitted via Fragrance Integrity_",
-    ],
-  });
-}
-
-function buildPrefilledFraudUrl(){
-  const fraudLabelForNewIssues = cfg.fraudReportLabel || "fraud-report";
-
-  return buildPrefilledIssueUrl({
-    title: "Fraud Report – Suspected Seller",
-    labels: [fraudLabelForNewIssues],
-    bodyLines: [
-      "### Your Whatnot username",
-      "<your Whatnot username>",
-      "",
-      "### Reported seller Whatnot username (exact)",
-      "<paste seller username here>",
-      "",
-      "### Seller profile link (recommended)",
-      "<paste Whatnot profile link here>",
-      "",
-      "### Complaint / what happened",
-      "<order date, item, what was wrong (counterfeit/missing/misrepresented), etc.>",
-      "",
-      "### Proof photos / evidence links",
-      "",
-      "_Submitted via Fragrance Integrity_",
-    ],
-  });
-}
-
-/**
  * For votes: seller key comes from the issue body field if present.
  */
 function sellerKeyFromVoteIssue(issue){
@@ -236,11 +205,6 @@ function sellerSearchUrlForLabel(label, seller){
 
 /* ---------------------------
    BANNED SELLERS (from bannedsellers.txt)
-   Format per line:
-   seller
-   seller | reason
-   seller | reason | link
-   Lines starting with # are comments.
 ----------------------------*/
 function parseBannedSellers(text){
   const lines = (text || "").split(/\r?\n/);
@@ -301,12 +265,9 @@ function renderBanned(items){
 }
 
 async function loadBannedFromFile(){
-  // If you haven't added the HTML section yet, just skip gracefully.
   if(!els.bannedList || !els.bannedCountPill) return;
 
   try{
-    // Fetch from repo root. We add a small cache-bust so updates propagate.
-    // You can remove ?v=... if you'd rather rely on normal caching.
     const res = await fetch(`bannedsellers.txt?v=${Date.now()}`, { cache: "no-store" });
     if(!res.ok) throw new Error(`bannedsellers.txt not found (${res.status})`);
     const text = await res.text();
@@ -448,30 +409,22 @@ async function loadApprovedFraud(){
    INIT
 ----------------------------*/
 async function init(){
-  // Buttons open PREFILLED classic issue editor
-  els.voteLink.href = buildPrefilledVoteUrl();
-  els.reportLink.href = buildPrefilledFraudUrl();
+  // Buttons open GitHub Issue Forms (YML templates)
+  els.voteLink.href = buildVoteFormUrl();
+  els.reportLink.href = buildFraudFormUrl();
 
   setStatus("Loading lists from GitHub…");
 
   try{
-    // Load banned list from file + the two GitHub API lists
     await Promise.all([loadVotes(), loadApprovedFraud(), loadBannedFromFile()]);
 
-    // If nothing overwrote status (like cache/rate-limit message), set to Loaded.
     if(els.status.textContent === "Loading lists from GitHub…") setStatus("Loaded.");
   }catch(err){
     console.error(err);
-    // Don’t nuke UI if cache already filled things; just show helpful message.
     setStatus("Temporarily rate-limited by GitHub. Try again in a bit.");
     if (els.voteCountPill.textContent === "Loading…") els.voteCountPill.textContent = "—";
     if (els.fraudCountPill.textContent === "Loading…") els.fraudCountPill.textContent = "—";
-    // banned list is independent (static file), so no need to change it here
   }
 }
 
 init();
-
-
-
-
