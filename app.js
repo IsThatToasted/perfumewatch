@@ -25,6 +25,11 @@ function issuesNewBase(){
   return `https://github.com/${cfg.repoOwner}/${cfg.repoName}/issues/new`;
 }
 
+// ✅ NEW: chooser route (more reliable for Issue Forms)
+function issuesNewChooseBase(){
+  return `https://github.com/${cfg.repoOwner}/${cfg.repoName}/issues/new/choose`;
+}
+
 function issuesListUrl(label){
   const q = new URLSearchParams({
     state: "open",
@@ -46,11 +51,11 @@ function safeText(s){ return (s || "").toString().trim(); }
  * Build a GitHub Issue Form URL that opens a specific .yml template.
  * Template files must live in .github/ISSUE_TEMPLATE/
  *
- * Example:
- * https://github.com/OWNER/REPO/issues/new?template=vote-authentic.yml
+ * Most reliable route:
+ * https://github.com/OWNER/REPO/issues/new/choose?template=vote_authentic.yml
  */
 function issueFormUrl(templateFile){
-  const base = issuesNewBase();
+  const base = issuesNewChooseBase();
   const params = new URLSearchParams({ template: templateFile });
   return `${base}?${params.toString()}`;
 }
@@ -305,7 +310,7 @@ function renderTopAuthentic(agg){
           <a href="${row.latestIssueUrl}" target="_blank" rel="noreferrer">${row.seller}</a>
         </div>
         <div class="muted small">
-          Vouches/Votes are public. 
+          Vouches/Votes are public.
           <a href="${row.allUrl}" target="_blank" rel="noreferrer"
              style="color:var(--muted); text-decoration:underline;">
             View all
@@ -428,4 +433,3 @@ async function init(){
 }
 
 init();
-
