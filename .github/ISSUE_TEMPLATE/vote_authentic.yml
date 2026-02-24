@@ -1,0 +1,29 @@
+name: Vote – Authentic Seller
+description: Vote for a Whatnot fragrance seller you believe is authentic.
+title: "SELLER NAME HERE (exact Whatnot seller name)"
+labels: ["vote-authentic"]
+body:
+  - type: input
+    id: seller
+    attributes:
+      label: Whatnot seller username (exact)
+      placeholder: e.g. fragranceking123
+    validations:
+      required: true
+
+  - type: input
+    id: whatnotLink
+    attributes:
+      label: Seller profile link (optional)
+      placeholder: https://www.whatnot.com/user/...
+    validations:
+      required: false
+
+  - type: textarea
+    id: why
+    attributes:
+      label: Why do you believe they’re authentic?
+      description: Keep it short. Examples: consistent batches, receipts shown on stream, sealed product, reputation, etc.
+      placeholder: "Explain briefly…"
+    validations:
+      required: true
