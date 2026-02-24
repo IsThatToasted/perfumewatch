@@ -3,34 +3,19 @@ description: Submit a report with evidence. You must include details + proof lin
 title: "SELLER NAME HERE (exact Whatnot seller name)"
 labels: ["fraud-report"]
 body:
-  - type: input
-    id: reporterName
-    attributes:
-      label: Your name
-      placeholder: "John Doe"
-    validations:
-      required: true
 
   - type: input
     id: whatnotUser
     attributes:
-      label: Your Whatnot username
+      label: Your Whatnot Username
       placeholder: "yourusername"
-    validations:
-      required: true
-
-  - type: input
-    id: email
-    attributes:
-      label: Your email (for follow-up)
-      placeholder: "you@email.com"
     validations:
       required: true
 
   - type: input
     id: seller
     attributes:
-      label: Reported seller Whatnot username (exact)
+      label: Reported seller Whatnot Username (exact)
       placeholder: "sellerusername"
     validations:
       required: true
@@ -47,7 +32,7 @@ body:
     id: complaint
     attributes:
       label: Complaint / what happened
-      description: Include order date, item, price, what was wrong (counterfeit, missing, misrepresented, etc.)
+      description: Include order date, item, what was wrong (counterfeit, missing, misrepresented, etc.)
       placeholder: "Write the details…"
     validations:
       required: true
@@ -57,7 +42,7 @@ body:
     attributes:
       label: Proof photos / evidence links
       description: Paste links to photos/videos (Imgur/Google Photos/etc). After submitting, you can also drag-drop images into issue comments.
-      placeholder: "- Link 1\n- Link 2\n- Notes about each photo"
+      placeholder: "- Link 1\n- Link 2\n- Or use Attach Photos Below"
     validations:
       required: true
 
@@ -67,4 +52,5 @@ body:
       label: Confirmation
       options:
         - label: "I confirm this report is truthful to the best of my knowledge."
+
           required: true
