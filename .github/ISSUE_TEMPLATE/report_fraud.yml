@@ -1,56 +1,54 @@
-name: Report – Suspected Fraudulent Seller
-description: Submit a report with evidence. You must include details + proof links/photos.
-title: "SELLER NAME HERE (exact Whatnot seller name)"
-labels: ["fraud-report"]
-body:
+name: "Report – Suspected Fraudulent Seller"
+description: "Submit a report with evidence. Must include proof."
+title: "Fraud Report – <seller_username>"
+labels:
+  - "fraud-report"
 
-  - type: input
-    id: whatnotUser
+body:
+  - type: "markdown"
     attributes:
-      label: Your Whatnot Username
+      value: |
+        Submit a detailed fraud report.
+        Evidence (photos, links, screenshots) is required.
+
+  - type: "input"
+    id: "reporter_whatnot_username"
+    attributes:
+      label: "Your Whatnot username"
       placeholder: "yourusername"
     validations:
       required: true
 
-  - type: input
-    id: seller
+  - type: "input"
+    id: "reported_seller_username"
     attributes:
-      label: Reported seller Whatnot Username (exact)
-      placeholder: "sellerusername"
+      label: "Reported seller Whatnot username (exact)"
+      placeholder: "sellerusername123"
     validations:
       required: true
 
-  - type: input
-    id: sellerLink
+  - type: "input"
+    id: "seller_profile_link"
     attributes:
-      label: Seller profile link (recommended)
+      label: "Seller profile link (recommended)"
       placeholder: "https://www.whatnot.com/user/..."
     validations:
       required: false
 
-  - type: textarea
-    id: complaint
+  - type: "textarea"
+    id: "complaint_details"
     attributes:
-      label: Complaint / what happened
-      description: Include order date, item, what was wrong (counterfeit, missing, misrepresented, etc.)
-      placeholder: "Write the details…"
+      label: "Complaint / what happened"
+      description: "Include order date, item purchased, what was wrong, etc."
+      placeholder: "Explain what happened..."
     validations:
       required: true
 
-  - type: textarea
-    id: evidence
+  - type: "textarea"
+    id: "evidence_links"
     attributes:
-      label: Proof photos / evidence links
-      description: Paste links to photos/videos (Imgur/Google Photos/etc). After submitting, you can also drag-drop images into issue comments.
-      placeholder: "- Link 1\n- Link 2\n- Or use Attach Photos Below"
+      label: "Proof photos / evidence links"
+      description: "Upload images or paste links."
+      placeholder: "Paste image or link here..."
     validations:
       required: true
-
-  - type: checkboxes
-    id: consent
-    attributes:
-      label: Confirmation
-      options:
-        - label: "I confirm this report is truthful to the best of my knowledge."
-
-          required: true
